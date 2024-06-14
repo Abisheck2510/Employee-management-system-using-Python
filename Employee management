@@ -1,0 +1,185 @@
+from tkinter import messagebox, filedialog, StringVar
+from tkinter import *
+from datetime import datetime
+import mysql.connector
+from PIL import Image,ImageTk
+import os
+
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="Abi@2002",
+    database="employee_form"
+)
+mycursor = mydb.cursor()
+
+def add_employee():
+    ID = id_entry.get()
+    name = name_entry.get()
+    age = age_entry.get()
+    salary = salary_entry.get()
+    gender = gender_var.get()
+    address = address_entry.get()
+    contact = contact_entry.get()
+    date_joining = join_entry.get()
+    department = department_entry.get()
+    community = community_var.get()
+    photography_path = photograph_path_entry.get()
+    agreements = bool(agreements_var.get())
+
+    try:
+        # Validate date format
+        date_joining = datetime.strptime(date_joining, "%Y-%m-%d").date()
+    except ValueError:
+        messagebox.showerror("Invalid Date Format", "Date of Joining must be in YYYY-MM-DD format.")
+        return
+
+    confirm = messagebox.askyesno("Confirmation", "Are you sure you want to add this employee details?")
+    if confirm:
+        sql = "INSERT INTO employeedb(ID, name, age, salary, gender, address, contact, date_joining, department, community, photography_path, agreements) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        val = (ID, name, age, salary, gender, address, contact, date_joining, department, community, photography_path, agreements)
+        mycursor.execute(sql, val)
+        mydb.commit()
+        messagebox.showinfo("Success", "Employee details added successfully")
+
+def view_employee():
+    mycursor.execute("SELECT * FROM employeedb")
+    employees = mycursor.fetchall()
+    for employee in employees:
+        print(employee)
+
+def clear_entries():
+    id_entry.delete(0, "end")
+    name_entry.delete(0, "end")
+    age_entry.delete(0, "end")
+    salary_entry.delete(0, "end")
+
+def browse_photograph():
+    photograph_path = filedialog.askopenfilename()
+    filename = os.path.basename(photograph_path)
+    photograph_path_entry.delete(0, END)
+    photograph_path_entry.insert(END, filename)
+
+def show_employee_details(employee):
+    details = f"ID: {employee[0]}\nName: {employee[1]}\nAge: {employee[2]}\nSalary: {employee[3]}\nGender: {employee[4]}\nAddress: {employee[5]}\nContact: {employee[6]}\nDate of Joining: {employee[7]}\nDepartment: {employee[8]}\nCommunity: {employee[9]}"
+    messagebox.showinfo("Employee Details", details)
+
+
+def best_employees():
+    top=Toplevel(root)
+    top.title("Best Employees")
+    mycursor.execute("SELECT * FROM employeedb")
+    employees = mycursor.fetchall()
+
+    row = 0
+    col = 0
+    max_col = 5
+    for employee in employees:
+        photography_path = employee[10]
+        if os.path.exists(photography_path):
+            img = Image.open(photography_path)
+            img = img.resize((100, 100), Image.ANTIALIAS)
+            photo = ImageTk.PhotoImage(img)
+
+            btn = Button(top, image=photo, command=lambda emp=employee: show_employee_details(employee))
+            btn.image = photo
+            btn.grid(row=row, column=col, padx=10, pady=10)
+            btn.pack()
+
+            col += 1
+            if col >= max_col:
+                col = 0
+                row += 1
+        else:
+            print(f"Photograph path not found for {employee[1]}")
+    top.mainloop()
+
+
+def submit_form():
+    ID = id_entry.get()
+    name = name_entry.get()
+    age = age_entry.get()
+    salary = salary_entry.get()
+    gender = gender_var.get()
+    address = address_entry.get()
+    contact = contact_entry.get()
+    date_joining = join_entry.get()
+    department = department_entry.get()
+    community = community_var.get()
+    photography_path = photograph_path_entry.get()
+    agreements = agreements_var.get()
+
+    if '' in [ID, name, age, salary, gender, address, contact, date_joining, department, community, photography_path]:
+        messagebox.showerror("Error", "Fill in all the necessary details.")
+    elif not agreements:
+        messagebox.showerror("Error", "Confirm the details are correct?")
+    else:
+        add_employee()
+
+root = Tk()
+root.title("Employee Management System")
+root.configure(background="light green")
+from tkinter import Tk, Label
+background_image = Image.open("background.jpg")
+background_photo = ImageTk.PhotoImage(background_image)
+background_label = Label(root, image=background_photo)
+background_label.place(relwidth=1, relheight=1)
+
+title_label = Label(root, text="EMPLOYEE MANAGEMENT SYSTEM", font=("Perpetua Titling MT", 25), bg="light blue", fg="red")
+title_label.grid(row=0, column=3, columnspan=2, pady=10)
+
+label_font = ("Footlight MT", 10)
+Label(root, text="ID:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=1, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Name:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=2, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Age:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=3, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Salary:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=4, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Gender:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=5, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Address:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=6, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Contact:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=7, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Date of Joining (YYYY-MM-DD):", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=8, column=0, padx=4, pady=4)
+Label(root, text="Department:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=9, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Community:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=10, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="Photograph:", fg="blue", font=("Perpetua Titling MT", 11)).grid(row=11, column=0, padx=4, pady=4, sticky="e")
+Label(root, text="CONFIRMATION:", font=label_font).grid(row=12, column=0, padx=4, pady=4, sticky="e")
+
+id_entry = Entry(root)
+id_entry.grid(row=1, column=1)
+name_entry = Entry(root)
+name_entry.grid(row=2, column=1)
+age_entry = Entry(root)
+age_entry.grid(row=3, column=1)
+salary_entry = Entry(root)
+salary_entry.grid(row=4, column=1)
+gender_var = StringVar(root)
+gender_var.set("Male")
+Radiobutton(root, text="Male", variable=gender_var, value="Male").place(x=270, y=192)
+Radiobutton(root, text="Female", variable=gender_var, value="Female").place(x=340, y=192)
+address_entry = Entry(root)
+address_entry.grid(row=6, column=1)
+contact_entry = Entry(root)
+contact_entry.grid(row=7, column=1)
+join_entry = Entry(root)
+join_entry.grid(row=8, column=1)
+department_entry = StringVar(root)
+department_entry.set("Production")
+department_dropdown = OptionMenu(root, department_entry, "Production", "Designing", "Quality", "Testing", "Tooling")
+department_dropdown.grid(row=9, column=1)
+community_var = StringVar(root)
+community_var.set("BC")
+Radiobutton(root, text="OC", variable=community_var, value="OC").place(x=280, y=347)
+Radiobutton(root, text="BC", variable=community_var, value="BC").place(x=340, y=347)
+Radiobutton(root, text="MBC", variable=community_var, value="MBC").place(x=400, y=347)
+Radiobutton(root, text="SC", variable=community_var, value="SC").place(x=470, y=347)
+Radiobutton(root, text="ST", variable=community_var, value="ST").place(x=530, y=347)
+photograph_path_entry = Entry(root)
+photograph_path_entry.grid(row=11, column=1)
+agreements_var = IntVar(root)
+Checkbutton(root, text="Above details are correct", variable=agreements_var).grid(row=12, column=1, columnspan=2)
+
+Button(root, text="Add Employee", command=submit_form).grid(row=13, column=1)
+Button(root, text="View Employee", command=view_employee).grid(row=13, column=2, padx=35)
+Button(root, text="Clear entities", command=clear_entries).place(x=565, y=436)
+Button(root, text="Browse", command=browse_photograph).place(x=395, y=378)
+Button(root, text="Best Employees", command=best_employees).place(x=700, y=436)
+
+root.mainloop()
